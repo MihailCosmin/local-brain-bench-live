@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Local Brain Bench</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <svg class="brain" viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+      <path d="M9 3.5a3 3 0 0 0-3 3 2.6 2.6 0 0 0-1.4 4.6A2.8 2.8 0 0 0 5 16.4a3 3 0 0 0 4 2.6V3.9A3 3 0 0 0 9 3.5Z"
+            fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+      <path d="M15 3.5a3 3 0 0 1 3 3 2.6 2.6 0 0 1 1.4 4.6A2.8 2.8 0 0 1 19 16.4a3 3 0 0 1-4 2.6V3.9a3 3 0 0 1 0-.4Z"
+            fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+      <path d="M9 8.5h2M13 8.5h2M9 13h2M13 13h2M12 3.5v17" fill="none" stroke="currentColor"
+            stroke-width="1.2" stroke-linecap="round"/>
+    </svg>
+    <div class="brand-text">
+      <h1>Local Brain Bench</h1>
+      <p class="subtitle">Which local model should route Claude Workbench?</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="gpu-block" id="gpu-block">
+      <div class="gpu-name" id="gpu-name">GPU</div>
+      <div class="vram-meter" title="VRAM">
+        <div class="vram-fill" id="vram-fill"></div>
+      </div>
+      <div class="vram-label" id="vram-label">—</div>
+    </div>
+    <div class="ollama-ver" id="ollama-ver">Ollama —</div>
+    <div class="state-pill idle" id="state-pill">idle</div>
+    <div class="remote-age hidden" id="remote-age"></div>
+    <div class="elapsed-block">
+      <div class="elapsed-bar"><div class="elapsed-fill" id="elapsed-fill"></div></div>
+      <div class="elapsed-label" id="elapsed-label">00:00 / 120:00</div>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <section class="side-section ctrl">
+      <h2>Models</h2>
+      <div id="models-list" class="models-list"></div>
+    </section>
+
+    <section class="side-section ctrl">
+      <h2>Tests</h2>
+      <div id="suites-list" class="suites-list"></div>
+    </section>
+
+    <section class="side-section ctrl">
+      <h2>Settings</h2>
+      <div class="settings">
+        <label class="field">
+          <span>Context size</span>
+          <select id="set-num-ctx">
+            <option value="4096">4096</option>
+            <option value="8192">8192</option>
+            <option value="16384">16384</option>
+            <option value="32768">32768</option>
+          </select>
+        </label>
+        <label class="field toggle">
+          <span>Thinking</span>
+          <input type="checkbox" id="set-think">
+        </label>
+        <label class="field">
+          <span>Total minutes</span>
+          <input type="number" id="set-total-minutes" min="1" step="1">
+        </label>
+        <label class="field">
+          <span>Minutes per model</span>
+          <input type="number" id="set-model-minutes" min="1" step="1">
+        </label>
+        <label class="field">
+          <span>Request timeout (s)</span>
+          <input type="number" id="set-request-timeout" min="1" step="1">
+        </label>
+        <label class="field">
+          <span>Min tok/s</span>
+          <input type="number" id="set-min-tps" min="0" step="0.1">
+        </label>
+        <label class="field toggle">
+          <span>Live GUI test</span>
+          <input type="checkbox" id="set-gui-live">
+        </label>
+        <p class="warn-text">takes over mouse &amp; keyboard (~2 min per model)</p>
+      </div>
+      <div class="actions">
+        <button id="btn-start" class="btn-primary">Start benchmark</button>
+        <button id="btn-stop" class="btn-danger hidden">Stop</button>
+      </div>
+      <p id="form-error" class="form-error hidden"></p>
+    </section>
+
+    <section class="side-section">
+      <h2>History</h2>
+      <select id="history-select" class="history-select">
+        <option value="">— live —</option>
+      </select>
+      <a href="#" id="back-live" class="back-live hidden">Back to live</a>
+    </section>
+  </aside>
+
+  <main class="main" id="main">
+    <section class="card">
+      <h2 class="card-title">Progress</h2>
+      <div id="progress-cards" class="progress-cards"></div>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">Leaderboard</h2>
+      <div id="leaderboard" class="leaderboard-wrap"></div>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">Scores by test</h2>
+      <div id="chart-scores" class="chart-wrap"></div>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">Speed</h2>
+      <div id="chart-speed" class="chart-wrap"></div>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">Details</h2>
+      <div id="details" class="details-wrap"></div>
+    </section>
+
+    <section class="card log-card">
+      <h2 class="card-title log-toggle" id="log-toggle">Log <span class="chev" id="log-chev">▾</span></h2>
+      <div id="log-body" class="log-body">
+        <div id="log-lines" class="log-lines"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>window.LBB_REMOTE = {"repo": "MihailCosmin/local-brain-bench-live", "branch": "data", "interval_s": 90};</script>
+<script src="app.js"></script>
+</body>
+</html>
