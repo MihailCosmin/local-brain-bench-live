@@ -26,7 +26,7 @@ const CATEGORIES = [
 
 const PALETTE = ['#e07b53', '#4f9cff', '#3fb950', '#d29922', '#c678dd', '#56b6c2'];
 
-const LS_KEY = 'lbb-form-v2';
+const LS_KEY = 'lbb-form-v3'; // v3: new default models (gemma4:e4b, bonsai-2:9b, bonsai-2:27b)
 
 // Set by the GitHub Pages copy (bench/publish.py): read-only, the run comes from the data
 // branch of the publish repository through the GitHub contents API.
@@ -615,6 +615,18 @@ function renderHistory() {
   sel.innerHTML = opts;
   sel.value = prev;
   $('back-live').classList.toggle('hidden', !state.historyId);
+  if (window.LBBHistory) {
+    const focus = state.models.filter((m) => m.default).map((m) => m.name);
+    window.LBBHistory.render($('history'), state.runs, {
+      currentId: state.historyId || (state.run && state.run.id) || null,
+      focus,
+      onOpen: (id) => {
+        $('history-select').value = id;
+        loadHistory(id);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      },
+    });
+  }
 }
 
 /* ---------- master render ---------- */
